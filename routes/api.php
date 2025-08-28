@@ -1,36 +1,28 @@
 <?php
 
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\StockController;
-use App\Http\Controllers\UserController;
 use App\Http\Controllers\AuthController;
-
-/*
-|--------------------------------------------------------------------------
-| API Routes
-|--------------------------------------------------------------------------
-|
-| Ici tu définis les routes API de ton application
-|
-*/
-
+use App\Http\Controllers\UserController;
+use App\Http\Controllers\StockController;
+use Illuminate\Support\Facades\Route;
 
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
 
-
 Route::middleware('auth:sanctum')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout']);
 
+    Route::prefix('users/{userId}/stocks')->group(function () {
+        Route::post('/', [UserController::class, 'addStock']);
+        Route::put('/{stockId}', [UserController::class, 'updateStock']);
+        Route::delete('/{stockId}', [UserController::class, 'deleteStock']);
+    });
+    
+
+    Route::post('stocks/{id}/attach-user', [StockController::class, 'attachUser']);
+    Route::delete('stocks/{id}/detach-user', [StockController::class, 'detachUser']);
+
+
     Route::apiResource('users', UserController::class);
-
+    
     Route::apiResource('stocks', StockController::class);
-
-    // Route::post('stocks/{id}/attach-user', [StockController::class, 'attachUser']);
-    // Route::post('stocks/{id}/detach-user', [StockController::class, 'detachUser']);
-
-    // Route::post('users/{id}/stocks', [UserController::class, 'addStock']);
-    // Route::put('users/{userId}/stocks/{stockId}', [UserController::class, 'updateStock']);
-    // Route::delete('users/{userId}/stocks/{stockId}', [UserController::class, 'deleteStock']);
 });

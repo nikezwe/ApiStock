@@ -55,6 +55,8 @@ class StockController extends Controller
     public function update(Request $request, $id)
     {
         try {
+
+            // return response()->json(['message' => $request->all()], 200);
             // Utilisation de la méthode myStocks() pour sécuriser l'accès
             $stock = $request->user()->myStocks()->findOrFail($id);
 

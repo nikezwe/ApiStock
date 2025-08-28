@@ -2,7 +2,6 @@
 
 namespace App\Models;
 
-// use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
@@ -40,15 +39,27 @@ class User extends Authenticatable
         'password' => 'hashed',
     ];
 
-    // Renommage de la méthode pour éviter la confusion avec "sharedStocks"
+    /**
+     * Relation : Un utilisateur peut avoir plusieurs stocks qu'il a créés
+     */
+    public function stocks()
+    {
+        return $this->hasMany(Stock::class, 'user_id');
+    }
+
+    /**
+     * Relation : Les stocks créés par cet utilisateur
+     */
     public function myStocks()
     {
         return $this->hasMany(Stock::class, 'user_id');
     }
 
+    /**
+     * Relation : Les stocks qui sont partagés avec cet utilisateur (many-to-many)
+     */
     public function sharedStocks()
     {
-        return $this->belongsToMany(Stock::class, 'users_stock')
-                     ->withTimestamps();
+        return $this->belongsToMany(Stock::class, 'stock_user', 'user_id', 'stock_id');
     }
 }

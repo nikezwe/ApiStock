@@ -51,28 +51,27 @@ class UserController extends Controller
 
     public function update(Request $request, $id)
     {
-
-         $data = $request->validate([
-                'username' => 'sometimes|string',
-                'email' => 'email|unique:users,email,',
-                'password' => 'sometimes|min:6',
-            ]);
         try {
             $user = User::findOrFail($id);
 
-            return response()->json($data, 200);
+            $data = $request->validate([
+                'username' => 'sometimes|string',
+                'email' => 'sometimes|email|unique:users,email,' . $id,
+                'password' => 'sometimes|min:6',
+                'adresse' => 'sometimes|string', // Correction du typo 'adrresse'
+            ]);
 
             if (isset($data['password'])) {
                 $data['password'] = bcrypt($data['password']);
             }
 
             $user->update($data);
-            $user->save();
             return response()->json($user, 200);
         } catch (Exception $e) {
             return response()->json(['error' => 'Erreur lors de la mise à jour de l\'utilisateur', 'message' => $e->getMessage()], 500);
         }
     }
+
     public function destroy($id)
     {
         try {

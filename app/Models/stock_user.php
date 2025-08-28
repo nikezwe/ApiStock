@@ -11,6 +11,6 @@ class stock_user extends Model
 
     protected $table = 'stock_users';
     protected $guarded = [];
-
+    
 
 }

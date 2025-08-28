@@ -12,7 +12,10 @@ class StockController extends Controller
     public function index(Request $request)
     {
         try {
-            $stocks = $request->user()->stocks()->with('users')->get();
+            // Utilisation de la méthode myStocks() pour récupérer les stocks créés par l'utilisateur
+            // Ou sharedStocks() pour les stocks qui lui sont partagés
+            // Je vous conseille de choisir l'une des deux selon ce que vous voulez afficher
+            $stocks = $request->user()->myStocks()->get();
             return response()->json($stocks, 200);
         } catch (Exception $e) {
             return response()->json(['error' => 'Erreur lors de la récupération des stocks', 'message' => $e->getMessage()], 500);
@@ -37,10 +40,12 @@ class StockController extends Controller
             return response()->json(['error' => 'Erreur lors de la création du stock', 'message' => $e->getMessage()], 500);
         }
     }
+
     public function show(Request $request, $id)
     {
         try {
-            $stock = $request->user()->stocks()->with('users')->findOrFail($id);
+            // Utilisation de la méthode myStocks() pour vérifier que l'utilisateur a accès à ce stock
+            $stock = $request->user()->myStocks()->with('users')->findOrFail($id);
             return response()->json($stock, 200);
         } catch (Exception $e) {
             return response()->json(['error' => 'Stock non trouvé ou non autorisé', 'message' => $e->getMessage()], 404);
@@ -50,7 +55,8 @@ class StockController extends Controller
     public function update(Request $request, $id)
     {
         try {
-            $stock = $request->user()->stocks()->findOrFail($id);
+            // Utilisation de la méthode myStocks() pour sécuriser l'accès
+            $stock = $request->user()->myStocks()->findOrFail($id);
 
             $data = $request->validate([
                 'name' => 'sometimes|string',
@@ -69,7 +75,8 @@ class StockController extends Controller
     public function destroy(Request $request, $id)
     {
         try {
-            $stock = $request->user()->stocks()->findOrFail($id);
+            // Utilisation de la méthode myStocks()
+            $stock = $request->user()->myStocks()->findOrFail($id);
             $stock->delete();
 
             return response()->json(['message' => 'Stock supprimé avec succès'], 200);
@@ -77,10 +84,12 @@ class StockController extends Controller
             return response()->json(['error' => 'Erreur lors de la suppression du stock', 'message' => $e->getMessage()], 500);
         }
     }
+
     public function attachUser(Request $request, $id)
     {
         try {
-            $stock = $request->user()->stocks()->findOrFail($id);
+            // Utilisation de la méthode myStocks() pour vérifier si le stock appartient à l'utilisateur
+            $stock = $request->user()->myStocks()->findOrFail($id);
 
             $request->validate([
                 'user_id' => 'required|exists:users,id'
@@ -97,7 +106,8 @@ class StockController extends Controller
     public function detachUser(Request $request, $id)
     {
         try {
-            $stock = $request->user()->stocks()->findOrFail($id);
+            // Utilisation de la méthode myStocks()
+            $stock = $request->user()->myStocks()->findOrFail($id);
 
             $request->validate([
                 'user_id' => 'required|exists:users,id'

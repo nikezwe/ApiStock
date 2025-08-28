@@ -26,8 +26,6 @@ class UserController extends Controller
         try {
             $data = $request->validate([
                 'username' => 'required',
-                'first_name' => 'required',
-                'last_name' => 'required',
                 'email' => 'required|email|unique:users',
                 'password' => 'required|min:6'
             ]);
@@ -53,14 +51,11 @@ class UserController extends Controller
 
     public function update(Request $request, $id)
     {
- 
+
          $data = $request->validate([
                 'username' => 'sometimes|string',
-                'first_name' => 'sometimes|string',
-                'last_name' => 'sometimes|string',
                 'email' => 'email|unique:users,email,',
                 'password' => 'sometimes|min:6',
-                'adrresse' => 'sometimes|string',
             ]);
         try {
             $user = User::findOrFail($id);

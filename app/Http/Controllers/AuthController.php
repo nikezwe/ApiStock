@@ -15,20 +15,17 @@ class AuthController extends Controller
     public function register(Request $request)
     {
         try {
+            // Validation mise à jour pour ne pas inclure "first_name" et "last_name"
             $data = $request->validate([
-                'username'   => 'required|string',
-                'first_name' => 'required|string',
-                'last_name'  => 'required|string',
-                'email'      => 'required|email|unique:users',
-                'password'   => 'required|min:6',
+                'username'  => 'required|string',
+                'email'     => 'required|email|unique:users',
+                'password'  => 'required|min:6',
             ]);
 
             $user = User::create([
-                'username'   => $data['username'],
-                'first_name' => $data['first_name'],
-                'last_name'  => $data['last_name'],
-                'email'      => $data['email'],
-                'password'   => bcrypt($data['password']),
+                'username'  => $data['username'],
+                'email'     => $data['email'],
+                'password'  => bcrypt($data['password']),
             ]);
 
             $token = $user->createToken('api_token')->plainTextToken;

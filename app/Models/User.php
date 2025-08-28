@@ -40,14 +40,15 @@ class User extends Authenticatable
         'password' => 'hashed',
     ];
 
-    public function stocks()
+    // Renommage de la méthode pour éviter la confusion avec "sharedStocks"
+    public function myStocks()
     {
-        return $this->hasMany(Stock::class);
+        return $this->hasMany(Stock::class, 'user_id');
     }
 
     public function sharedStocks()
     {
         return $this->belongsToMany(Stock::class, 'users_stock')
-                    ->withTimestamps();
+                     ->withTimestamps();
     }
 }

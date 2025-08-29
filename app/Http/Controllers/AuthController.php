@@ -1,10 +1,11 @@
 <?php
+
 namespace App\Http\Controllers;
 
-use App\Http\Controllers\Controller;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Validation\ValidationException;
 use Exception;
 
 class AuthController extends Controller
@@ -15,19 +16,21 @@ class AuthController extends Controller
     public function register(Request $request)
     {
         try {
-            // Validation mise à jour pour ne pas inclure "first_name" et "last_name"
+            // Validation
             $data = $request->validate([
-                'username'  => 'required|string',
-                'email'     => 'required|email|unique:users',
-                'password'  => 'required|min:6',
+                'username' => 'required|string|max:255',
+                'email'    => 'required|email|unique:users,email',
+                'password' => 'required|string|',
             ]);
 
+            // Création utilisateur
             $user = User::create([
-                'username'  => $data['username'],
-                'email'     => $data['email'],
-                'password'  => bcrypt($data['password']),
+                'username' => $data['username'],
+                'email'    => $data['email'],
+                'password' => bcrypt($data['password']),
             ]);
 
+            // Création token
             $token = $user->createToken('api_token')->plainTextToken;
 
             return response()->json([
@@ -35,6 +38,8 @@ class AuthController extends Controller
                 'token' => $token
             ], 201);
 
+        } catch (ValidationException $e) {
+            return response()->json(['errors' => $e->errors()], 422);
         } catch (Exception $e) {
             return response()->json([
                 'error'   => 'Erreur lors de l’inscription',
@@ -49,17 +54,23 @@ class AuthController extends Controller
     public function login(Request $request)
     {
         try {
+            // Validation
             $request->validate([
                 'email'    => 'required|email',
-                'password' => 'required'
+                'password' => 'required|string',
             ]);
 
+            // Vérification utilisateur
             $user = User::where('email', $request->email)->first();
 
             if (!$user || !Hash::check($request->password, $user->password)) {
                 return response()->json(['error' => 'Identifiants invalides'], 401);
             }
 
+            // Supprimer les anciens tokens (optionnel)
+            $user->tokens()->delete();
+
+            // Création nouveau token
             $token = $user->createToken('api_token')->plainTextToken;
 
             return response()->json([
@@ -67,6 +78,8 @@ class AuthController extends Controller
                 'token' => $token
             ], 200);
 
+        } catch (ValidationException $e) {
+            return response()->json(['errors' => $e->errors()], 422);
         } catch (Exception $e) {
             return response()->json([
                 'error'   => 'Erreur lors de la connexion',
@@ -81,7 +94,9 @@ class AuthController extends Controller
     public function logout(Request $request)
     {
         try {
-            $request->user()->tokens()->delete();
+            // Supprimer le token utilisé pour cette requête
+            $request->user()->currentAccessToken()->delete();
+
             return response()->json(['message' => 'Déconnecté avec succès'], 200);
 
         } catch (Exception $e) {
@@ -90,5 +105,13 @@ class AuthController extends Controller
                 'message' => $e->getMessage()
             ], 500);
         }
+    }
+
+    /**
+     * Récupérer le profil de l'utilisateur connecté
+     */
+    public function profile(Request $request)
+    {
+        return response()->json($request->user(), 200);
     }
 }

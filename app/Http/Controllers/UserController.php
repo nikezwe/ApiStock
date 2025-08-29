@@ -2,11 +2,9 @@
 
 namespace App\Http\Controllers;
 
-use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Models\Stock;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Hash;
 use Exception;
 
 class UserController extends Controller
@@ -14,10 +12,13 @@ class UserController extends Controller
     public function index()
     {
         try {
-            $users = User::with('stocks')->get();
+            $users = User::all();
             return response()->json($users, 200);
         } catch (Exception $e) {
-            return response()->json(['error' => 'Erreur lors de la récupération des utilisateurs', 'message' => $e->getMessage()], 500);
+            return response()->json([
+                'error' => 'Erreur lors de la récupération des utilisateurs',
+                'message' => $e->getMessage()
+            ], 500);
         }
     }
 
@@ -25,8 +26,8 @@ class UserController extends Controller
     {
         try {
             $data = $request->validate([
-                'username' => 'required',
-                'email' => 'required|email|unique:users',
+                'username' => 'required|string',
+                'email'    => 'required|email|unique:users',
                 'password' => 'required|min:6'
             ]);
 
@@ -35,7 +36,10 @@ class UserController extends Controller
 
             return response()->json($user, 201);
         } catch (Exception $e) {
-            return response()->json(['error' => 'Erreur lors de la création de l\'utilisateur', 'message' => $e->getMessage()], 500);
+            return response()->json([
+                'error' => 'Erreur lors de la création de l\'utilisateur',
+                'message' => $e->getMessage()
+            ], 500);
         }
     }
 
@@ -45,9 +49,13 @@ class UserController extends Controller
             $user = User::with('stocks')->findOrFail($id);
             return response()->json($user, 200);
         } catch (Exception $e) {
-            return response()->json(['error' => 'Utilisateur non trouvé', 'message' => $e->getMessage()], 404);
+            return response()->json([
+                'error' => 'Utilisateur non trouvé',
+                'message' => $e->getMessage()
+            ], 404);
         }
     }
+
 
     public function update(Request $request, $id)
     {
@@ -56,9 +64,9 @@ class UserController extends Controller
 
             $data = $request->validate([
                 'username' => 'sometimes|string',
-                'email' => 'sometimes|email|unique:users,email,' . $id,
+                'email'    => 'sometimes|email|unique:users,email,' . $id,
                 'password' => 'sometimes|min:6',
-                'adresse' => 'sometimes|string', // Correction du typo 'adrresse'
+                'adresse'  => 'sometimes|string',
             ]);
 
             if (isset($data['password'])) {
@@ -68,73 +76,93 @@ class UserController extends Controller
             $user->update($data);
             return response()->json($user, 200);
         } catch (Exception $e) {
-            return response()->json(['error' => 'Erreur lors de la mise à jour de l\'utilisateur', 'message' => $e->getMessage()], 500);
+            return response()->json([
+                'error' => 'Erreur lors de la mise à jour de l\'utilisateur',
+                'message' => $e->getMessage()
+            ], 500);
         }
     }
+
 
     public function destroy($id)
     {
         try {
             $user = User::findOrFail($id);
             $user->delete();
+
             return response()->json(['message' => 'Utilisateur supprimé avec succès'], 200);
         } catch (Exception $e) {
-            return response()->json(['error' => 'Erreur lors de la suppression de l\'utilisateur', 'message' => $e->getMessage()], 500);
+            return response()->json([
+                'error' => 'Erreur lors de la suppression de l\'utilisateur',
+                'message' => $e->getMessage()
+            ], 500);
         }
     }
 
-    public function addStock(Request $request, $id)
-    {
-        try {
-            $user = User::findOrFail($id);
-
-            $data = $request->validate([
-                'name' => 'required|string',
-                'description' => 'nullable|string',
-                'status' => 'required|string'
-            ]);
-
-            $data['user_id'] = $user->id;
-
-            $stock = Stock::create($data);
-
-            return response()->json($stock, 201);
-        } catch (Exception $e) {
-            return response()->json(['error' => 'Erreur lors de l\'ajout du stock', 'message' => $e->getMessage()], 500);
-        }
-    }
-
-    public function updateStock(Request $request, $userId, $stockId)
+    public function addStock(Request $request, $userId)
     {
         try {
             $user = User::findOrFail($userId);
-            $stock = $user->stocks()->findOrFail($stockId);
 
             $data = $request->validate([
-                'name' => 'sometimes|string',
-                'description' => 'sometimes|string',
-                'status' => 'sometimes|string'
+                'stock_id' => 'required|exists:stocks,id',
             ]);
 
-            $stock->update($data);
 
-            return response()->json($stock, 200);
+            $user->stocks()->syncWithoutDetaching([$data['stock_id']]);
+
+            return response()->json(['message' => 'Stock attaché avec succès'], 201);
         } catch (Exception $e) {
-            return response()->json(['error' => 'Erreur lors de la mise à jour du stock', 'message' => $e->getMessage()], 500);
+            return response()->json([
+                'error' => 'Erreur lors de l\'attachement du stock',
+                'message' => $e->getMessage()
+            ], 500);
         }
     }
+
 
     public function deleteStock($userId, $stockId)
     {
         try {
             $user = User::findOrFail($userId);
-            $stock = $user->stocks()->findOrFail($stockId);
 
-            $stock->delete();
+            $user->stocks()->detach($stockId);
 
-            return response()->json(['message' => 'Stock supprimé avec succès'], 200);
+            return response()->json(['message' => 'Stock détaché avec succès'], 200);
         } catch (Exception $e) {
-            return response()->json(['error' => 'Erreur lors de la suppression du stock', 'message' => $e->getMessage()], 500);
+            return response()->json([
+                'error' => 'Erreur lors du détachement du stock',
+                'message' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function createStock(Request $request, $userId)
+    {
+        try {
+            $user = User::findOrFail($userId);
+
+            $data = $request->validate([
+                'name'        => 'required|string',
+                'description' => 'nullable|string',
+                'status'      => 'required|string'
+            ]);
+
+ 
+            $stock = Stock::create($data);
+
+
+            $user->stocks()->attach($stock->id);
+
+            return response()->json([
+                'message' => 'Stock créé et attaché avec succès',
+                'stock'   => $stock
+            ], 201);
+        } catch (Exception $e) {
+            return response()->json([
+                'error' => 'Erreur lors de la création du stock',
+                'message' => $e->getMessage()
+            ], 500);
         }
     }
 }

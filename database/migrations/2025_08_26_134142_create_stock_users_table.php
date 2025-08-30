@@ -13,6 +13,7 @@ return new class extends Migration
             $table->id();
             $table->foreignId('stock_id')->constrained()->onDelete('cascade');
             $table->foreignId('user_id')->constrained()->onDelete('cascade');
+            $table->string('quantite')->nullable(); 
             $table->timestamps();
             $table->unique(['stock_id', 'user_id']);
         });

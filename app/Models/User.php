@@ -26,7 +26,8 @@ class User extends Authenticatable
     // Relation Many-to-Many avec Stock
     public function stocks()
     {
-        return $this->belongsToMany(Stock::class, 'stock_user', 'user_id', 'stock_id')
+        return $this->belongsToMany(Stock::class)
+            ->withPivot('quantite')  // ton champ dans la pivot
             ->withTimestamps();
     }
 }

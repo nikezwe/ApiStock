@@ -14,7 +14,8 @@ class Stock extends Model
 
     public function users()
     {
-        return $this->belongsToMany(User::class, 'stock_user', 'stock_id', 'user_id')
+        return $this->belongsToMany(User::class)
+            ->withPivot('quantite')
             ->withTimestamps();
     }
 }

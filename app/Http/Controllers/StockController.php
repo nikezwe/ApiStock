@@ -95,45 +95,4 @@ class StockController extends Controller
         }
     }
 
-    // Attacher un utilisateur à un stock
-    public function attachUser(Request $request, $id)
-    {
-        try {
-            $stock = Stock::findOrFail($id);
-
-            $data = $request->validate([
-                'user_id' => 'required|exists:users,id'
-            ]);
-
-            $stock->users()->syncWithoutDetaching([$data['user_id']]);
-
-            return response()->json(['message' => 'Utilisateur attaché au stock avec succès'], 201);
-        } catch (Exception $e) {
-            return response()->json([
-                'error' => 'Erreur lors de l’attachement de l’utilisateur',
-                'message' => $e->getMessage()
-            ], 500);
-        }
-    }
-
-    // Détacher un utilisateur d’un stock
-    public function detachUser(Request $request, $id)
-    {
-        try {
-            $stock = Stock::findOrFail($id);
-
-            $data = $request->validate([
-                'user_id' => 'required|exists:users,id'
-            ]);
-
-            $stock->users()->detach($data['user_id']);
-
-            return response()->json(['message' => 'Utilisateur détaché du stock avec succès'], 200);
-        } catch (Exception $e) {
-            return response()->json([
-                'error' => 'Erreur lors du détachement de l’utilisateur',
-                'message' => $e->getMessage()
-            ], 500);
-        }
-    }
 }

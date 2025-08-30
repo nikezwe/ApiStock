@@ -4,79 +4,72 @@ namespace App\Http\Controllers;
 
 use App\Models\StockUser;
 use Illuminate\Http\Request;
+use App\Models\User;
+use App\Models\Stock;
 
 use Exception;
 
 class StockUserController extends Controller
 {
+
     public function index()
     {
-        try {
-            $relations = StockUser::with(['user', 'stock'])->get();
-            return response()->json($relations, 200);
-        } catch (Exception $e) {
-            return response()->json(['error' => 'Erreur lors de la récupération des relations', 'message' => $e->getMessage()], 500);
-        }
+        $relations = StockUser::with(['user', 'stock'])->get();
+        return response()->json($relations, 200);
     }
-    public function store(Request $request)
+
+    public function attachStock(Request $request)
     {
+        $request->validate([
+            'user_id' => 'required|exists:users,id',
+            'stock_id' => 'required|exists:stocks,id',
+        ]);
+
         try {
-            $data = $request->validate([
-                'user_id' => 'required|exists:users,id',
-                'stock_id' => 'required|exists:stocks,id',
-            ]);
+            $user = User::findOrFail($request->user_id);
+            $stockId = $request->stock_id;
 
-            $exists = StockUser::where('user_id', $data['user_id'])
-                                ->where('stock_id', $data['stock_id'])
-                                ->first();
-            if ($exists) {
-                return response()->json(['message' => 'Cette relation existe déjà'], 409);
-            }
+            // Attacher sans dupliquer
+            $user->stocks()->syncWithoutDetaching([$stockId]);
 
-            $relation = StockUser::create($data);
-
-            return response()->json($relation, 201);
+            return response()->json([
+                'message' => 'Stock attaché avec succès',
+                'user_stocks' => $user->stocks
+            ], 200);
         } catch (Exception $e) {
-            return response()->json(['error' => 'Erreur lors de la création de la relation', 'message' => $e->getMessage()], 500);
+            return response()->json(['error' => 'Erreur : ' . $e->getMessage()], 500);
         }
     }
 
-    public function show($id)
+    // Détacher un stock d'un utilisateur
+    public function detachStock(Request $request)
     {
+        $request->validate([
+            'user_id' => 'required|exists:users,id',
+            'stock_id' => 'required|exists:stocks,id',
+        ]);
+
         try {
-            $relation = StockUser::with(['user', 'stock'])->findOrFail($id);
-            return response()->json($relation, 200);
+            $user = User::findOrFail($request->user_id);
+            $user->stocks()->detach($request->stock_id);
+
+            return response()->json([
+                'message' => 'Stock détaché avec succès',
+                'user_stocks' => $user->stocks
+            ], 200);
         } catch (Exception $e) {
-            return response()->json(['error' => 'Relation non trouvée', 'message' => $e->getMessage()], 404);
+            return response()->json(['error' => 'Erreur : ' . $e->getMessage()], 500);
         }
     }
 
-    public function update(Request $request, $id)
-    {
-        try {
-            $relation = StockUser::findOrFail($id);
-
-            $data = $request->validate([
-
-            ]);
-
-            $relation->update($data);
-
-            return response()->json($relation, 200);
-        } catch (Exception $e) {
-            return response()->json(['error' => 'Erreur lors de la mise à jour de la relation', 'message' => $e->getMessage()], 500);
-        }
-    }
-
-    public function destroy($id)
-    {
-        try {
-            $relation = StockUser::findOrFail($id);
-            $relation->delete();
-
-            return response()->json(['message' => 'Relation supprimée avec succès'], 200);
-        } catch (Exception $e) {
-            return response()->json(['error' => 'Erreur lors de la suppression de la relation', 'message' => $e->getMessage()], 500);
-        }
-    }
+    // Lister tous les stocks d'un utilisateur
+    // public function listUserStocks($userId)
+    // {
+    //     try {
+    //         $user = User::with('stocks')->findOrFail($userId);
+    //         return response()->json($user->stocks, 200);
+    //     } catch (Exception $e) {
+    //         return response()->json(['error' => 'Erreur : ' . $e->getMessage()], 500);
+    //     }
+    // }
 }
